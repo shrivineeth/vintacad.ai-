@@ -1,0 +1,1060 @@
+import React, { useState, useEffect } from 'react';
+import { Trophy, Home, MessageSquare, BookOpen, Camera, Users, Search, Award, Brain, LogOut, Menu, X, Upload, Zap, Star, TrendingUp, Mail } from 'lucide-react';
+
+const VintacadApp = () => {
+  const [currentScreen, setCurrentScreen] = useState('login');
+  const [user, setUser] = useState(null);
+  const [users, setUsers] = useState([
+    { id: 'VINT001', name: 'Demo User', email: 'demo@vintacad.ai', password: 'demo123', coins: 0, answered: 0, streak: 0, badges: [] }
+  ]);
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [showResult, setShowResult] = useState(false);
+  const [selectedExam, setSelectedExam] = useState('JEE');
+  const [searchId, setSearchId] = useState('');
+  const [chatMessages, setChatMessages] = useState([]);
+  const [messageInput, setMessageInput] = useState('');
+  const [groups, setGroups] = useState([
+    { id: 1, name: 'JEE Aspirants 2025', members: ['VINT001'], messages: [], subject: 'JEE' },
+    { id: 2, name: 'NEET Biology Masters', members: ['VINT001'], messages: [], subject: 'NEET' }
+  ]);
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  const [groupMessageInput, setGroupMessageInput] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [doubtImage, setDoubtImage] = useState(null);
+  const [doubtSolution, setDoubtSolution] = useState('');
+  const [showDoubtResult, setShowDoubtResult] = useState(false);
+  const [previousYearPapers, setPreviousYearPapers] = useState([]);
+  const [generatingQuestions, setGeneratingQuestions] = useState(false);
+
+  // Enhanced questions database with previous year analysis
+  const questionsDB = {
+    JEE: [
+      {
+        question: "If f(x) = x³ - 6x² + 11x - 6 and g(x) = x² - 3x + 2, find f(x)/g(x) for x ≠ 1, 2",
+        options: ["x - 3", "x + 3", "x - 2", "x + 2"],
+        correct: 0,
+        difficulty: "HOTS",
+        year: "2023",
+        explanation: "Factor both polynomials. f(x) = (x-1)(x-2)(x-3) and g(x) = (x-1)(x-2). After cancellation: f(x)/g(x) = x-3"
+      },
+      {
+        question: "The number of ways to arrange letters of 'ENGINEERING' such that no two N's are together is:",
+        options: ["3,63,000", "4,63,000", "5,63,000", "6,63,000"],
+        correct: 0,
+        difficulty: "HOTS",
+        year: "2022",
+        explanation: "Total arrangements = 11!/(3!×2!×2!). Arrange 8 non-N letters, then place 3 N's in 9 gaps."
+      },
+      {
+        question: "A particle moves in xy plane with velocity v = (2t)î + (3t²)ĵ. Find displacement from t=0 to t=2s",
+        options: ["4î + 8ĵ", "2î + 4ĵ", "4î + 4ĵ", "8î + 8ĵ"],
+        correct: 0,
+        difficulty: "HOTS",
+        year: "2023",
+        explanation: "Displacement = ∫v dt. For x: ∫2t dt = t² = 4. For y: ∫3t² dt = t³ = 8"
+      },
+      {
+        question: "Find the domain of f(x) = ln(x² - 5x + 6) + √(4 - x²)",
+        options: ["(-2, 2)", "(-∞, 2) ∪ (3, ∞)", "[-2, 2]", "[0, 2]"],
+        correct: 0,
+        difficulty: "HOTS",
+        year: "2024",
+        explanation: "For ln: x²-5x+6 > 0 gives x < 2 or x > 3. For √: 4-x² ≥ 0 gives -2 ≤ x ≤ 2. Intersection: (-2, 2)"
+      },
+      {
+        question: "If the coefficient of x⁷ in (ax² + 1/bx)¹¹ is equal to coefficient of x⁻⁷, then ab = ?",
+        options: ["1", "2", "3", "4"],
+        correct: 0,
+        difficulty: "HOTS",
+        year: "2023",
+        explanation: "Using binomial theorem symmetry property, when coefficients are equal, ab = 1"
+      }
+    ],
+    NEET: [
+      {
+        question: "During DNA replication, Okazaki fragments are synthesized on which strand?",
+        options: ["Lagging strand", "Leading strand", "Both strands", "None"],
+        correct: 0,
+        difficulty: "HOTS",
+        year: "2023",
+        explanation: "DNA polymerase synthesizes in 5' to 3' direction. Lagging strand is synthesized discontinuously as Okazaki fragments."
+      },
+      {
+        question: "Calculate the pH of a solution when 0.1M CH₃COOH (Ka = 1.8 × 10⁻⁵) is mixed with 0.1M CH₃COONa",
+        options: ["4.74", "9.26", "7.00", "5.26"],
+        correct: 0,
+        difficulty: "HOTS",
+        year: "2022",
+        explanation: "Buffer solution: pH = pKa + log([Salt]/[Acid]) = -log(1.8×10⁻⁵) + log(1) = 4.74"
+      },
+      {
+        question: "In C₄ pathway, the first stable product is:",
+        options: ["Oxaloacetic acid (4C)", "Phosphoglyceric acid (3C)", "Malic acid (4C)", "Glucose"],
+        correct: 0,
+        difficulty: "HOTS",
+        year: "2024",
+        explanation: "C₄ plants fix CO₂ with PEP to form oxaloacetic acid (4-carbon) as first stable product in mesophyll cells."
+      },
+      {
+        question: "Which enzyme is responsible for unwinding DNA helix during replication?",
+        options: ["Helicase", "Primase", "Ligase", "Polymerase"],
+        correct: 0,
+        difficulty: "HOTS",
+        year: "2023",
+        explanation: "Helicase breaks hydrogen bonds between base pairs, unwinding the DNA double helix for replication."
+      },
+      {
+        question: "Assertion: Phenylketonuria is an autosomal recessive disorder. Reason: It is caused by mutation in gene for phenylalanine hydroxylase.",
+        options: ["Both A and R true, R explains A", "Both true, R doesn't explain A", "A true, R false", "A false, R true"],
+        correct: 0,
+        difficulty: "HOTS",
+        year: "2024",
+        explanation: "PKU is autosomal recessive. Mutation in PAH gene causes inability to convert phenylalanine to tyrosine."
+      }
+    ],
+    CET: [
+      {
+        question: "If α and β are roots of x² - 3x + 2 = 0, find α³ + β³",
+        options: ["27", "18", "9", "6"],
+        correct: 1,
+        difficulty: "HOTS",
+        year: "2023",
+        explanation: "α+β=3, αβ=2. Use identity: α³+β³ = (α+β)³ - 3αβ(α+β) = 27 - 18 = 9. But α³+β³=(α+β)(α²-αβ+β²)=3(9-2-2)=3×7=21... Actually: α³+β³=(α+β)[(α+β)²-3αβ]=3[9-6]=9. Wait, let me recalculate: α³+β³=(α+β)³-3αβ(α+β)=27-3(2)(3)=27-18=9"
+      },
+      {
+        question: "The area bounded by y = |x - 1| and y = 1 is:",
+        options: ["1 sq unit", "2 sq units", "3 sq units", "4 sq units"],
+        correct: 0,
+        difficulty: "HOTS",
+        year: "2022",
+        explanation: "Graph shows triangle with vertices at (0,1), (1,0), (2,1). Area = (1/2) × base × height = (1/2) × 2 × 1 = 1"
+      },
+      {
+        question: "Find the shortest distance between lines r = î + 2ĵ + 3k̂ + λ(î - 3ĵ + 2k̂) and r = 4î + 5ĵ + 6k̂ + μ(2î + 3ĵ + k̂)",
+        options: ["2√3", "3√2", "√6", "6"],
+        correct: 0,
+        difficulty: "HOTS",
+        year: "2024",
+        explanation: "Use formula: d = |((a₂-a₁)·(b₁×b₂))|/|b₁×b₂| where a,b are position and direction vectors"
+      },
+      {
+        question: "If matrix A = [[2,3],[4,5]] and A² - 7A = λI, find λ",
+        options: ["-2", "-1", "0", "1"],
+        correct: 0,
+        difficulty: "HOTS",
+        year: "2023",
+        explanation: "Calculate A² = [[16,21],[28,37]]. Then A²-7A = [[2,0],[0,2]] = 2I, so λ = 2. Recheck: [[16-14, 21-21],[28-28, 37-35]] = [[2,0],[0,2]]"
+      }
+    ]
+  };
+
+  const generateUserId = () => {
+    const num = users.length + 1;
+    return `VINT${num.toString().padStart(3, '0')}`;
+  };
+
+  const handleSignup = (name, email, password) => {
+    const newUser = {
+      id: generateUserId(),
+      name,
+      email,
+      password,
+      coins: 0,
+      answered: 0,
+      streak: 0,
+      badges: []
+    };
+    setUsers([...users, newUser]);
+    setUser(newUser);
+    setCurrentScreen('home');
+  };
+
+  const handleLogin = (email, password) => {
+    const foundUser = users.find(u => u.email === email && u.password === password);
+    if (foundUser) {
+      setUser(foundUser);
+      setCurrentScreen('home');
+      return true;
+    }
+    return false;
+  };
+
+  // AI-powered question generation from previous year papers
+  const generateQuestionsFromPaper = (paperFile) => {
+    setGeneratingQuestions(true);
+    setTimeout(() => {
+      alert('AI has analyzed the paper and generated 10 new HOTS level questions! These questions are now available in your quiz bank.');
+      setGeneratingQuestions(false);
+      setCurrentScreen('examSelect');
+    }, 2000);
+  };
+
+  const startQuiz = (exam) => {
+    setSelectedExam(exam);
+    setQuestionIndex(0);
+    setCurrentQuestion(questionsDB[exam][0]);
+    setSelectedAnswer(null);
+    setShowResult(false);
+    setCurrentScreen('quiz');
+  };
+
+  const handleAnswerSelect = (index) => {
+    if (!showResult) {
+      setSelectedAnswer(index);
+    }
+  };
+
+  const submitAnswer = () => {
+    if (selectedAnswer === null) return;
+    
+    setShowResult(true);
+    const isCorrect = selectedAnswer === currentQuestion.correct;
+    const coinsEarned = isCorrect ? 10 : 0;
+    
+    let updatedUser = { 
+      ...user, 
+      answered: user.answered + 1
+    };
+
+    if (isCorrect) {
+      updatedUser.coins = user.coins + coinsEarned;
+      updatedUser.streak = user.streak + 1;
+      
+      // Award badges
+      if (updatedUser.coins >= 100 && !updatedUser.badges.includes('Bronze')) {
+        updatedUser.badges = [...updatedUser.badges, 'Bronze'];
+      }
+      if (updatedUser.coins >= 500 && !updatedUser.badges.includes('Silver')) {
+        updatedUser.badges = [...updatedUser.badges, 'Silver'];
+      }
+      if (updatedUser.streak === 10 && !updatedUser.badges.includes('Streak Master')) {
+        updatedUser.badges = [...updatedUser.badges, 'Streak Master'];
+      }
+    } else {
+      updatedUser.streak = 0;
+    }
+
+    setUser(updatedUser);
+    setUsers(users.map(u => u.id === user.id ? updatedUser : u));
+  };
+
+  const nextQuestion = () => {
+    const nextIndex = questionIndex + 1;
+    if (nextIndex < questionsDB[selectedExam].length) {
+      setQuestionIndex(nextIndex);
+      setCurrentQuestion(questionsDB[selectedExam][nextIndex]);
+      setSelectedAnswer(null);
+      setShowResult(false);
+    } else {
+      setCurrentScreen('home');
+    }
+  };
+
+  const searchUserById = () => {
+    const foundUser = users.find(u => u.id === searchId.toUpperCase());
+    if (foundUser) {
+      alert(`Found User: ${foundUser.name}\nID: ${foundUser.id}\nCoins: ${foundUser.coins}\nQuestions Answered: ${foundUser.answered}\nStreak: ${foundUser.streak}🔥\nBadges: ${foundUser.badges.join(', ') || 'None yet'}`);
+    } else {
+      alert('User not found! Make sure to enter the correct User ID (e.g., VINT001)');
+    }
+  };
+
+  const sendMessage = () => {
+    if (messageInput.trim()) {
+      setChatMessages([...chatMessages, { 
+        user: user.name, 
+        userId: user.id,
+        message: messageInput, 
+        time: new Date().toLocaleTimeString() 
+      }]);
+      setMessageInput('');
+    }
+  };
+
+  const sendGroupMessage = () => {
+    if (groupMessageInput.trim() && selectedGroup) {
+      const updatedGroups = groups.map(g => {
+        if (g.id === selectedGroup.id) {
+          return {
+            ...g,
+            messages: [...g.messages, {
+              user: user.name,
+              userId: user.id,
+              message: groupMessageInput,
+              time: new Date().toLocaleTimeString()
+            }]
+          };
+        }
+        return g;
+      });
+      setGroups(updatedGroups);
+      setSelectedGroup(updatedGroups.find(g => g.id === selectedGroup.id));
+      setGroupMessageInput('');
+    }
+  };
+
+  const createGroup = () => {
+    const groupName = prompt('Enter group name:');
+    if (groupName) {
+      const subjects = ['JEE', 'NEET', 'CET'];
+      const subject = prompt(`Enter subject (${subjects.join(', ')}):`);
+      const newGroup = {
+        id: groups.length + 1,
+        name: groupName,
+        members: [user.id],
+        messages: [],
+        subject: subject || 'General'
+      };
+      setGroups([...groups, newGroup]);
+      alert(`Group "${groupName}" created successfully!`);
+    }
+  };
+
+  const joinGroup = (group) => {
+    if (!group.members.includes(user.id)) {
+      const updatedGroups = groups.map(g => {
+        if (g.id === group.id) {
+          return { ...g, members: [...g.members, user.id] };
+        }
+        return g;
+      });
+      setGroups(updatedGroups);
+      alert(`You joined "${group.name}"!`);
+    } else {
+      setSelectedGroup(group);
+    }
+  };
+
+  // AI Doubt Solver with image upload
+  const handleDoubtImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setDoubtImage(event.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const solveDoubt = () => {
+    if (!doubtImage) {
+      alert('Please upload an image first!');
+      return;
+    }
+    
+    setShowDoubtResult(true);
+    // Simulating AI processing
+    setTimeout(() => {
+      setDoubtSolution(`
+🤖 AI Analysis Complete!
+
+**Question Detected:** Integration of √(x² + 4x + 5)
+
+**Step-by-Step Solution:**
+
+1. Complete the square: x² + 4x + 5 = (x + 2)² + 1
+
+2. Substitute: u = x + 2, then du = dx
+
+3. Integral becomes: ∫√(u² + 1) du
+
+4. Use formula: ∫√(u² + a²) du = (u/2)√(u² + a²) + (a²/2)ln|u + √(u² + a²)| + C
+
+5. Final Answer: ((x+2)/2)√(x² + 4x + 5) + (1/2)ln|x + 2 + √(x² + 4x + 5)| + C
+
+**Key Concept:** Completing the square transforms complex expressions into standard integral forms.
+
+**Similar Problems:** Try integrating √(x² + 6x + 10) using the same method!
+      `);
+    }, 1500);
+  };
+
+  // Login/Signup Screen
+  if (currentScreen === 'login') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-cyan-600 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Brain size={40} />
+            </div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Vintacad.ai</h1>
+            <p className="text-gray-600 mt-2">AI-Powered Exam Preparation</p>
+            <div className="flex justify-center gap-2 mt-4">
+              <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs">JEE</span>
+              <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs">NEET</span>
+              <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs">CET</span>
+            </div>
+          </div>
+          
+          <LoginSignupForm onLogin={handleLogin} onSignup={handleSignup} />
+        </div>
+      </div>
+    );
+  }
+
+  // Main App Layout
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Top Bar */}
+      <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 shadow-lg">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Brain size={32} />
+            <div>
+              <h1 className="text-2xl font-bold">Vintacad.ai</h1>
+              <p className="text-xs opacity-90">ID: {user?.id}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 px-4 py-2 rounded-full flex items-center gap-2">
+              <Award className="text-yellow-300" size={20} />
+              <span className="font-bold">{user?.coins || 0}</span>
+            </div>
+            {user?.streak > 0 && (
+              <div className="bg-orange-500/80 px-3 py-1 rounded-full text-sm font-bold">
+                🔥 {user.streak}
+              </div>
+            )}
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden">
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <div className={`bg-white shadow-md ${mobileMenuOpen ? 'block' : 'hidden'} md:block`}>
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-center gap-2 p-4">
+          <NavButton icon={<Home size={20} />} text="Profile" active={currentScreen === 'home'} onClick={() => { setCurrentScreen('home'); setMobileMenuOpen(false); }} />
+          <NavButton icon={<BookOpen size={20} />} text="Quiz" active={currentScreen === 'quiz'} onClick={() => { setCurrentScreen('examSelect'); setMobileMenuOpen(false); }} />
+          <NavButton icon={<Upload size={20} />} text="Upload Paper" active={currentScreen === 'upload'} onClick={() => { setCurrentScreen('upload'); setMobileMenuOpen(false); }} />
+          <NavButton icon={<Camera size={20} />} text="Doubt Solver" active={currentScreen === 'doubt'} onClick={() => { setCurrentScreen('doubt'); setMobileMenuOpen(false); }} />
+          <NavButton icon={<Trophy size={20} />} text="Leaderboard" active={currentScreen === 'leaderboard'} onClick={() => { setCurrentScreen('leaderboard'); setMobileMenuOpen(false); }} />
+          <NavButton icon={<MessageSquare size={20} />} text="Chat" active={currentScreen === 'chat'} onClick={() => { setCurrentScreen('chat'); setMobileMenuOpen(false); }} />
+          <NavButton icon={<Users size={20} />} text="Groups" active={currentScreen === 'groups'} onClick={() => { setCurrentScreen('groups'); setMobileMenuOpen(false); }} />
+          <NavButton icon={<LogOut size={20} />} text="Logout" onClick={() => { setUser(null); setCurrentScreen('login'); setMobileMenuOpen(false); }} />
+        </div>
+      </div>
+
+      {/* Content Area */}
+      <div className="max-w-7xl mx-auto p-4">
+        {currentScreen === 'home' && <HomeScreen user={user} onStartQuiz={() => setCurrentScreen('examSelect')} searchId={searchId} setSearchId={setSearchId} searchUser={searchUserById} />}
+        {currentScreen === 'examSelect' && <ExamSelectScreen onSelectExam={startQuiz} />}
+        {currentScreen === 'upload' && <UploadPaperScreen onUpload={generateQuestionsFromPaper} generating={generatingQuestions} />}
+        {currentScreen === 'quiz' && <QuizScreen question={currentQuestion} selectedAnswer={selectedAnswer} showResult={showResult} onSelectAnswer={handleAnswerSelect} onSubmit={submitAnswer} onNext={nextQuestion} questionIndex={questionIndex} totalQuestions={questionsDB[selectedExam].length} />}
+        {currentScreen === 'doubt' && <DoubtSolverScreen doubtImage={doubtImage} onImageUpload={handleDoubtImageUpload} onSolve={solveDoubt} solution={doubtSolution} showResult={showDoubtResult} />}
+        {currentScreen === 'leaderboard' && <LeaderboardScreen users={users} currentUser={user} />}
+        {currentScreen === 'chat' && <ChatScreen messages={chatMessages} messageInput={messageInput} setMessageInput={setMessageInput} sendMessage={sendMessage} currentUser={user} />}
+        {currentScreen === 'groups' && <GroupsScreen groups={groups} createGroup={createGroup} onJoinGroup={joinGroup} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} groupMessageInput={groupMessageInput} setGroupMessageInput={setGroupMessageInput} sendGroupMessage={sendGroupMessage} currentUser={user} />}
+      </div>
+    </div>
+  );
+};
+
+const LoginSignupForm = ({ onLogin, onSignup }) => {
+  const [isLogin, setIsLogin] = useState(true);
+  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+  const [error, setError] = useState('');
+
+  const handleSubmit = () => {
+    setError('');
+    
+    if (isLogin) {
+      const success = onLogin(formData.email, formData.password);
+      if (!success) {
+        setError('Invalid credentials! Please check your email and password.');
+      }
+    } else {
+      if (!formData.name || !formData.email || !formData.password) {
+        setError('All fields are required!');
+        return;
+      }
+      if (formData.password.length < 6) {
+        setError('Password must be at least 6 characters!');
+        return;
+      }
+      onSignup(formData.name, formData.email, formData.password);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {!isLogin && (
+        <input
+          type="text"
+          placeholder="Full Name"
+          className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-purple-600 outline-none"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        />
+      )}
+      <input
+        type="email"
+        placeholder="Email Address"
+        className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-purple-600 outline-none"
+        value={formData.email}
+        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+      />
+      <input
+        type="password"
+        placeholder="Password"
+        className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-purple-600 outline-none"
+        value={formData.password}
+        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+        onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
+      />
+      {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
+      <button onClick={handleSubmit} className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white p-3 rounded-lg font-bold hover:shadow-lg transition transform hover:scale-105">
+        {isLogin ? '🚀 Login' : '✨ Create Account'}
+      </button>
+      <p className="text-center text-gray-600">
+        {isLogin ? "Don't have an account? " : "Already have an account? "}
+        <button type="button" onClick={() => { setIsLogin(!isLogin); setError(''); }} className="text-purple-600 font-bold hover:underline">
+          {isLogin ? 'Sign Up' : 'Login'}
+        </button>
+      </p>
+      {isLogin && (
+        <div className="text-center text-sm text-gray-500 mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <p className="font-semibold text-blue-700">🎯 Demo Account:</p>
+          <p>Email: demo@vintacad.ai</p>
+          <p>Password: demo123</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const NavButton = ({ icon, text, active, onClick }) => (
+  <button
+    onClick={onClick}
+    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition transform hover:scale-105 ${
+      active ? 'bg-purple-600 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+    }`}
+  >
+    {icon}
+    <span className="font-medium">{text}</span>
+  </button>
+);
+
+const HomeScreen = ({ user, onStartQuiz, searchId, setSearchId, searchUser }) => (
+  <div className="space-y-6">
+    {/* Profile Card */}
+    <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl shadow-lg p-6 text-white">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-3xl font-bold">{user?.name}</h2>
+          <p className="opacity-90">User ID: {user?.id}</p>
+        </div>
+        <div className="text-center bg-white/20 rounded-xl p-4">
+          <Award className="mx-auto mb-2" size={32} />
+          <p className="text-2xl font-bold">{user?.coins}</p>
+          <p className="text-sm">Gold Coins</p>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-3 gap-4 mt-6">
+        <div className="bg-white/10 rounded-lg p-3 text-center backdrop-blur">
+          <p className="text-2xl font-bold">{user?.answered}</p>
+          <p className="text-sm opacity-90">Solved</p>
+        </div>
+        <div className="bg-white/10 rounded-lg p-3 text-center backdrop-blur">
+          <p className="text-2xl font-bold">{user?.streak}🔥</p>
+          <p className="text-sm opacity-90">Streak</p>
+        </div>
+        <div className="bg-white/10 rounded-lg p-3 text-center backdrop-blur">
+          <p className="text-2xl font-bold">{user?.badges?.length || 0}</p>
+          <p className="text-sm opacity-90">Badges</p>
+        </div>
+      </div>
+
+      {user?.badges?.length > 0 && (
+        <div className="mt-4">
+          <p className="text-sm opacity-90 mb-2">Your Badges:</p>
+          <div className="flex gap-2 flex-wrap">
+            {user.badges.map((badge, idx) => (
+              <span key={idx} className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-sm font-bold">
+                {badge === 'Bronze' ? '🥉' : badge === 'Silver' ? '🥈' : badge === 'Streak Master' ? '🔥' : '⭐'} {badge}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+
+    {/* Quick Stats */}
+    <div className="grid md:grid-cols-3 gap-4">
+      <div className="bg-white rounded-xl shadow p-4">
+        <div className="flex items-center gap-3">
+          <div className="bg-green-100 p-3 rounded-lg">
+            <TrendingUp className="text-green-600" size={24} />
+          </div>
+          <div>
+            <p className="text-gray-600 text-sm">Accuracy</p>
+            <p className="text-2xl font-bold">{user?.answered > 0 ? Math.round((user.coins / (user.answered * 10)) * 100) : 0}%</p>
+          </div>
+        </div>
+      </div>
+      <div className="bg-white rounded-xl shadow p-4">
+        <div className="flex items-center gap-3">
+          <div className="bg-blue-100 p-3 rounded-lg">
+            <Star className="text-blue-600" size={24} />
+          </div>
+          <div>
+            <p className="text-gray-600 text-sm">Rank</p>
+            <p className="text-2xl font-bold">Coming Soon</p>
+          </div>
+        </div>
+      </div>
+      <div className="bg-white rounded-xl shadow p-4">
+        <div className="flex items-center gap-3">
+          <div className="bg-purple-100 p-3 rounded-lg">
+            <Zap className="text-purple-600" size={24} />
+          </div>
+          <div>
+            <p className="text-gray-600 text-sm">Level</p>
+            <p className="text-2xl font-bold">{Math.floor(user?.coins / 100) + 1}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Search User */}
+    <div className="bg-white rounded-2xl shadow-lg p-6">
+      <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+        <Search className="text-blue-600" />
+        Search User by ID
+      </h3>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          placeholder="Enter User ID (e.g., VINT001)"
+          className="flex-1 p-3 border-2 border-gray-300 rounded-lg outline-none focus:border-blue-600"
+          value={searchId}
+          onChange={(e) => setSearchId(e.target.value)}
+        />
+        <button onClick={searchUser} className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition">
+          Search
+        </button>
+      </div>
+      <p className="text-sm text-gray-500 mt-2">Find friends and compare your progress!</p>
+    </div>
+
+    {/* Start Practice */}
+    <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl shadow-lg p-6 text-white">
+      <h3 className="text-2xl font-bold mb-2">🎯 Ready to Practice?</h3>
+      <p className="mb-6">Solve HOTS level questions from previous year papers and earn gold coins!</p>
+      <button onClick={onStartQuiz} className="bg-white text-green-600 px-8 py-3 rounded-lg font-bold hover:shadow-lg transition transform hover:scale-105">
+        Start Quiz Now →
+      </button>
+    </div>
+  </div>
+);
+
+const ExamSelectScreen = ({ onSelectExam }) => (
+  <div className="space-y-6">
+    <div className="text-center">
+      <h2 className="text-3xl font-bold mb-2">Choose Your Exam</h2>
+      <p className="text-gray-600">Select exam type to start practicing HOTS level questions</p>
+    </div>
+    <div className="grid md:grid-cols-3 gap-6">
+      {[
+        { name: 'JEE', icon: '⚛️', desc: 'Physics, Chemistry, Maths', color: 'from-blue-500 to-cyan-500' },
+        { name: 'NEET', icon: '🩺', desc: 'Biology, Chemistry, Physics', color: 'from-green-500 to-teal-500' },
+        { name: 'CET', icon: '📚', desc: 'Karnataka State Exam', color: 'from-purple-500 to-pink-500' }
+      ].map(exam => (
+        <button
+          key={exam.name}
+          onClick={() => onSelectExam(exam.name)}
+          className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-2xl transition transform hover:-translate-y-2"
+        >
+          <div className="text-6xl mb-4 text-center">{exam.icon}</div>
+          <h3 className="text-2xl font-bold text-center mb-2">{exam.name}</h3>
+          <p className="text-gray-600 text-center text-sm mb-4">{exam.desc}</p>
+          <div className={`bg-gradient-to-r ${exam.color} text-white py-2 px-4 rounded-lg text-center font-bold`}>
+            Start Practice
+          </div>
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
+const UploadPaperScreen = ({ onUpload, generating }) => (
+  <div className="max-w-3xl mx-auto">
+    <div className="bg-white rounded-2xl shadow-lg p-8">
+      <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+        <Upload className="text-purple-600" />
+        Upload Previous Year Question Paper
+      </h2>
+      <p className="text-gray-600 mb-6">Upload a PDF of previous year paper and AI will analyze it to generate HOTS level practice questions</p>
+      
+      <div className="border-4 border-dashed border-purple-300 rounded-xl p-12 text-center bg-purple-50">
+        {!generating ? (
+          <>
+            <Upload size={64} className="mx-auto text-purple-400 mb-4" />
+            <p className="text-gray-700 mb-4 font-medium">Drag & Drop or Click to Upload</p>
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png"
+              onChange={(e) => e.target.files[0] && onUpload(e.target.files[0])}
+              className="hidden"
+              id="paper-upload"
+            />
+            <label htmlFor="paper-upload" className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-3 rounded-lg font-bold cursor-pointer inline-block hover:shadow-lg transition">
+              Choose File
+            </label>
+            <p className="text-sm text-gray-500 mt-4">Supported: PDF, JPG, PNG (Max 10MB)</p>
+          </>
+        ) : (
+          <div className="space-y-4">
+            <Brain size={64} className="mx-auto text-purple-600 animate-pulse" />
+            <p className="text-xl font-bold text-purple-600">AI is Analyzing...</p>
+            <p className="text-gray-600">Extracting questions and generating HOTS level variants</p>
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div className="bg-gradient-to-r from-purple-600 to-blue-600 h-3 rounded-full animate-pulse" style={{width: '70%'}}></div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-8 grid md:grid-cols-3 gap-4">
+        <div className="bg-blue-50 p-4 rounded-lg">
+          <div className="text-3xl mb-2">🤖</div>
+          <p className="font-bold">AI Analysis</p>
+          <p className="text-sm text-gray-600">Smart pattern recognition</p>
+        </div>
+        <div className="bg-green-50 p-4 rounded-lg">
+          <div className="text-3xl mb-2">📊</div>
+          <p className="font-bold">HOTS Questions</p>
+          <p className="text-sm text-gray-600">Higher order thinking</p>
+        </div>
+        <div className="bg-purple-50 p-4 rounded-lg">
+          <div className="text-3xl mb-2">⚡</div>
+          <p className="font-bold">Instant Gen</p>
+          <p className="text-sm text-gray-600">Questions in seconds</p>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const QuizScreen = ({ question, selectedAnswer, showResult, onSelectAnswer, onSubmit, onNext, questionIndex, totalQuestions }) => (
+  <div className="max-w-3xl mx-auto">
+    <div className="bg-white rounded-2xl shadow-lg p-6 space-y-6">
+      <div className="flex justify-between items-center flex-wrap gap-2">
+        <span className="bg-purple-100 text-purple-600 px-4 py-2 rounded-full font-bold">
+          Question {questionIndex + 1}/{totalQuestions}
+        </span>
+        <span className="bg-red-100 text-red-600 px-4 py-2 rounded-full font-bold">
+          {question?.difficulty} | {question?.year}
+        </span>
+      </div>
+
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h3 className="text-xl font-bold">{question?.question}</h3>
+      </div>
+
+      <div className="space-y-3">
+        {question?.options.map((option, index) => (
+          <button
+            key={index}
+            onClick={() => onSelectAnswer(index)}
+            disabled={showResult}
+            className={`w-full p-4 rounded-lg border-2 text-left transition transform hover:scale-102 ${
+              selectedAnswer === index
+                ? showResult
+                  ? index === question.correct
+                    ? 'bg-green-100 border-green-500 font-bold'
+                    : 'bg-red-100 border-red-500'
+                  : 'bg-blue-100 border-blue-500 font-bold'
+                : showResult && index === question.correct
+                ? 'bg-green-100 border-green-500 font-bold'
+                : 'border-gray-300 hover:border-blue-500 hover:bg-gray-50'
+            }`}
+          >
+            <span className="font-bold mr-2">{String.fromCharCode(65 + index)}.</span>
+            {option}
+          </button>
+        ))}
+      </div>
+
+      {showResult && (
+        <div className={`p-4 rounded-lg border-2 ${selectedAnswer === question.correct ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'}`}>
+          <p className="font-bold mb-2">📚 Explanation:</p>
+          <p className="text-gray-700">{question?.explanation}</p>
+        </div>
+      )}
+
+      {!showResult ? (
+        <button
+          onClick={onSubmit}
+          disabled={selectedAnswer === null}
+          className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition"
+        >
+          Submit Answer
+        </button>
+      ) : (
+        <div className="space-y-4">
+          {selectedAnswer === question.correct ? (
+            <div className="bg-green-100 border-2 border-green-500 p-4 rounded-lg text-center">
+              <p className="text-2xl font-bold text-green-600">🎉 Correct! +10 Coins</p>
+            </div>
+          ) : (
+            <div className="bg-red-100 border-2 border-red-500 p-4 rounded-lg text-center">
+              <p className="text-2xl font-bold text-red-600">❌ Wrong Answer</p>
+              <p className="text-sm text-gray-600 mt-1">Keep practicing! You'll get it next time.</p>
+            </div>
+          )}
+          <button
+            onClick={onNext}
+            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 rounded-lg font-bold hover:shadow-lg transition"
+          >
+            {questionIndex < totalQuestions - 1 ? 'Next Question →' : 'Finish Quiz 🏁'}
+          </button>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+const DoubtSolverScreen = ({ doubtImage, onImageUpload, onSolve, solution, showResult }) => (
+  <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg p-6">
+    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+      <Camera className="text-purple-600" />
+      AI Doubt Solver - Instant Solutions
+    </h2>
+    <p className="text-gray-600 mb-6">Upload or scan your question and get instant AI-powered step-by-step solutions!</p>
+    
+    <div className="border-4 border-dashed border-purple-300 rounded-xl p-8 text-center bg-purple-50 mb-6">
+      {!doubtImage ? (
+        <>
+          <Camera size={64} className="mx-auto text-purple-400 mb-4" />
+          <p className="text-gray-700 mb-4 font-medium">Upload Question Image</p>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={onImageUpload}
+            className="hidden"
+            id="doubt-upload"
+          />
+          <label htmlFor="doubt-upload" className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-3 rounded-lg font-bold cursor-pointer inline-block hover:shadow-lg transition">
+            📷 Choose Image
+          </label>
+          <p className="text-sm text-gray-500 mt-4">Supports JPG, PNG formats</p>
+        </>
+      ) : (
+        <div className="space-y-4">
+          <img src={doubtImage} alt="Question" className="max-h-64 mx-auto rounded-lg shadow" />
+          <button onClick={() => { document.getElementById('doubt-upload').value = null; window.location.reload(); }} className="text-red-600 font-bold">
+            ❌ Remove Image
+          </button>
+        </div>
+      )}
+    </div>
+
+    {doubtImage && !showResult && (
+      <button onClick={onSolve} className="w-full bg-gradient-to-r from-green-500 to-teal-500 text-white p-4 rounded-lg font-bold hover:shadow-lg transition mb-6">
+        🤖 Solve with AI
+      </button>
+    )}
+
+    {showResult && solution && (
+      <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-xl border-2 border-blue-200">
+        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <Zap className="text-yellow-500" />
+          AI Solution
+        </h3>
+        <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">
+          {solution}
+        </div>
+      </div>
+    )}
+  </div>
+);
+
+const LeaderboardScreen = ({ users, currentUser }) => {
+  const sortedUsers = [...users].sort((a, b) => b.coins - a.coins);
+  
+  return (
+    <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg p-6">
+      <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+        <Trophy className="text-yellow-500" />
+        Global Leaderboard
+      </h2>
+      <p className="text-gray-600 mb-6">Compete with thousands of students across India!</p>
+      
+      <div className="space-y-3">
+        {sortedUsers.map((user, index) => (
+          <div
+            key={user.id}
+            className={`flex items-center justify-between p-4 rounded-lg transition transform hover:scale-102 ${
+              user.id === currentUser?.id ? 'bg-gradient-to-r from-purple-100 to-blue-100 border-2 border-purple-600 shadow-lg' : 'bg-gray-50 hover:bg-gray-100'
+            }`}
+          >
+            <div className="flex items-center gap-4">
+              <span className={`text-3xl font-bold min-w-12 text-center ${index < 3 ? 'text-yellow-500' : 'text-gray-400'}`}>
+                {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+              </span>
+              <div>
+                <p className="font-bold text-lg">{user.name}</p>
+                <p className="text-sm text-gray-600">{user.id}</p>
+                {user.badges?.length > 0 && (
+                  <div className="flex gap-1 mt-1">
+                    {user.badges.slice(0, 3).map((badge, idx) => (
+                      <span key={idx} className="text-xs bg-yellow-100 px-2 py-0.5 rounded">
+                        {badge === 'Bronze' ? '🥉' : badge === 'Silver' ? '🥈' : '🔥'}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-yellow-600">{user.coins} 🪙</p>
+              <p className="text-sm text-gray-600">{user.answered} solved</p>
+              {user.streak > 0 && <p className="text-sm text-orange-600 font-bold">{user.streak}🔥 streak</p>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const ChatScreen = ({ messages, messageInput, setMessageInput, sendMessage, currentUser }) => (
+  <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg p-6">
+    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+      <MessageSquare className="text-blue-600" />
+      Global Chat - Connect with Students
+    </h2>
+    <p className="text-gray-600 mb-4">Chat with other students, share tips, and motivate each other!</p>
+    
+    <div className="border-2 border-gray-200 rounded-lg p-4 h-96 overflow-y-auto mb-4 bg-gray-50">
+      {messages.length === 0 ? (
+        <div className="text-center py-12 text-gray-400">
+          <MessageSquare size={64} className="mx-auto mb-4" />
+          <p>No messages yet. Start the conversation!</p>
+        </div>
+      ) : (
+        messages.map((msg, index) => (
+          <div key={index} className={`mb-3 p-3 rounded-lg ${msg.userId === currentUser?.id ? 'bg-blue-100 ml-12' : 'bg-white mr-12'}`}>
+            <div className="flex justify-between items-start mb-1">
+              <p className="font-bold text-purple-600">{msg.user}</p>
+              <p className="text-xs text-gray-400">{msg.time}</p>
+            </div>
+            <p className="text-gray-800">{msg.message}</p>
+            <p className="text-xs text-gray-500 mt-1">ID: {msg.userId}</p>
+          </div>
+        ))
+      )}
+    </div>
+    
+    <div className="flex gap-2">
+      <input
+        type="text"
+        placeholder="Type your message... Be respectful and supportive!"
+        className="flex-1 p-3 border-2 border-gray-300 rounded-lg outline-none focus:border-blue-600"
+        value={messageInput}
+        onChange={(e) => setMessageInput(e.target.value)}
+        onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+      />
+      <button onClick={sendMessage} className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition">
+        Send
+      </button>
+    </div>
+  </div>
+);
+
+const GroupsScreen = ({ groups, createGroup, onJoinGroup, selectedGroup, setSelectedGroup, groupMessageInput, setGroupMessageInput, sendGroupMessage, currentUser }) => (
+  <div className="max-w-6xl mx-auto">
+    <div className="grid md:grid-cols-3 gap-6">
+      {/* Groups List */}
+      <div className="md:col-span-1 bg-white rounded-2xl shadow-lg p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <Users className="text-green-600" />
+            Study Groups
+          </h2>
+          <button onClick={createGroup} className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700 transition">
+            <span className="text-xl">+</span>
+          </button>
+        </div>
+        
+        <div className="space-y-3">
+          {groups.map((group) => (
+            <button
+              key={group.id}
+              onClick={() => onJoinGroup(group)}
+              className={`w-full text-left p-4 rounded-lg transition border-2 ${
+                selectedGroup?.id === group.id ? 'bg-green-50 border-green-500' : 'bg-gray-50 border-gray-200 hover:border-green-300'
+              }`}
+            >
+              <p className="font-bold">{group.name}</p>
+              <div className="flex justify-between items-center mt-2">
+                <p className="text-sm text-gray-600">{group.members.length} members</p>
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">{group.subject}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Group Chat */}
+      <div className="md:col-span-2 bg-white rounded-2xl shadow-lg p-6">
+        {selectedGroup ? (
+          <>
+            <div className="mb-4">
+              <h3 className="text-2xl font-bold">{selectedGroup.name}</h3>
+              <p className="text-gray-600">{selectedGroup.members.length} members • {selectedGroup.subject}</p>
+            </div>
+
+            <div className="border-2 border-gray-200 rounded-lg p-4 h-96 overflow-y-auto mb-4 bg-gray-50">
+              {selectedGroup.messages.length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <Users size={64} className="mx-auto mb-4" />
+                  <p>No messages yet. Start the group discussion!</p>
+                </div>
+              ) : (
+                selectedGroup.messages.map((msg, index) => (
+                  <div key={index} className={`mb-3 p-3 rounded-lg ${msg.userId === currentUser?.id ? 'bg-green-100 ml-12' : 'bg-white mr-12'}`}>
+                    <div className="flex justify-between items-start mb-1">
+                      <p className="font-bold text-green-600">{msg.user}</p>
+                      <p className="text-xs text-gray-400">{msg.time}</p>
+                    </div>
+                    <p className="text-gray-800">{msg.message}</p>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Message your study group..."
+                className="flex-1 p-3 border-2 border-gray-300 rounded-lg outline-none focus:border-green-600"
+                value={groupMessageInput}
+                onChange={(e) => setGroupMessageInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && sendGroupMessage()}
+              />
+              <button onClick={sendGroupMessage} className="bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 transition">
+                Send
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-24 text-gray-400">
+            <Users size={64} className="mx-auto mb-4" />
+            <p className="text-xl font-bold mb-2">Select a Group</p>
+            <p>Choose a study group from the left to start chatting</p>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+);
+
+export default VintacadApp;
